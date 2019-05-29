@@ -3,7 +3,7 @@ set -e -x
 
 rm -fr PowerGraph
 
-git clone https://github.com/jakelever/PowerGraph.git
+git clone https://github.com/erwanm/PowerGraph.git
 
 cd PowerGraph
 
