@@ -104,7 +104,7 @@ if __name__ == "__main__":
 					
 					year = int(year)
 
-					assert year >= 1800 and year <= (date.today().year+1), "Publication year (%d) must be between 1800 and next year" % year
+					assert year >= 1700 and year <= (date.today().year+1), "Publication year (%d) must be between 1700 and next year" % year
 					
 					# Let's get the appropriate file handle
 					handle = None
