@@ -99,7 +99,9 @@ if __name__ == "__main__":
 								year = "19%02d" % yearNum
 						else:
 							yearSearch = re.search('([0-9]{4})', medlineDateFields[0].text)
-							assert yearSearch, "Couldn't find 4 digit year in text: %s"  % medlineDateFields[0].text
+							if not yearSearch:
+                                                                print >> sys.stderr, "Couldn't find 4 digit year in text: %s"  % medlineDateFields[0].text
+                                                                continue
 							year = yearSearch.group(1)
 					
 					year = int(year)
