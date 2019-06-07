@@ -5,6 +5,7 @@ medlineAndPMCDir=$1
 medlineAndPMCDir=`readlink -f $medlineAndPMCDir`
 
 python=/gsc/software/linux-x86_64/python-2.7.2/bin/python
+python=python
 #python=/gsc/software/linux-x86_64-centos6/python-2.7.8/bin/python
 #cooccurrenceMajigger=/projects/jlever/megaTextProject/nounphrasePipeline/cooccurrenceMajigger/cooccurrenceMajigger_articleCode.py
 
