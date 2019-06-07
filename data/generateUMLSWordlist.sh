@@ -74,9 +74,9 @@ cut -f 3 -d '|' SemGroups.filtered.txt | sort -u > SemGroups.filtered.ids.txt
 
 semanticTypeIDs=`cat SemGroups.filtered.ids.txt | tr '\n' ',' | sed -e 's/,$//'`
 
-python=/gsc/software/linux-x86_64/python-2.7.2/bin/python
+#python=/gsc/software/linux-x86_64/python-2.7.2/bin/python
 
-$python $HERE/helper_generateUMLSWordlist.py --selectedTypeIDs $semanticTypeIDs --umlsConceptFile $umlsDir/MRCONSO.RRF --umlsSemanticTypesFile $umlsDir/MRSTY.RRF --outWordlistFile $outDir/umlsWordlist.WithIDs.txt
+python $HERE/helper_generateUMLSWordlist.py --selectedTypeIDs $semanticTypeIDs --umlsConceptFile $umlsDir/MRCONSO.RRF --umlsSemanticTypesFile $umlsDir/MRSTY.RRF --outWordlistFile $outDir/umlsWordlist.WithIDs.txt
 
 # To avoid confusion, let's clean up a bit
 rm -f SemGroups.txt SemGroups.filtered.txt SemGroups.filtered.ids.txt
