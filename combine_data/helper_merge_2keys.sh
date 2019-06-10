@@ -15,11 +15,11 @@ usage() {
 expectedArgs=0
 
 # Show help message if desired
-if [[ $1 == "-h" || $1 == '--help' ]]; then
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
 	usage
 	exit 0
 # Check for expected number of arguments
-elif [[ $# -ne $expectedArgs ]]; then
+elif [ $# -ne $expectedArgs ]; then
 	echo "ERROR: Expecting $expectedArgs arguments"
 	usage
 	exit 255
