@@ -121,7 +121,7 @@ do
 
 	# Take the grouped files and create a list of commands to merge the files
 	cat ./.tmp.joinList |\
-	awk -v round=$round -v script=$mergeScript ' { a=a+1; print "cat "$0" | sh "script" > .tmp.merged."round"."a } ' > ./.tmp.commandList
+	awk -v round=$round -v script=$mergeScript ' { a=a+1; print "cat "$0" | bash "script" > .tmp.merged."round"."a } ' > ./.tmp.commandList
 
 	# Take the command list and execute them across multiple cores using xargs
 	cat ./.tmp.commandList |\
