@@ -2,7 +2,7 @@
 set -e
 
 usage() {
-	echo "Usage: bash `basename $0` files outFile mirror"
+	echo "Usage: bash `basename $0` files outFile mergeScript mirror"
 	echo ""
 	echo "This script merges multiple files using a reduction method and depends on the passed in script."
 	echo "The code works in a parallel fashion and will attempt to use all cores of the machine."
