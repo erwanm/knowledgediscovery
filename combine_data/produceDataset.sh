@@ -15,7 +15,8 @@ occurrenceDir=`readlink -f $occurrenceDir`
 sentenceCountDir=`readlink -f $sentenceCountDir`
 outDir=`readlink -f $outDir`
 
-tmpDir=tmp.$HOSTNAME.$$.$RANDOM
+#tmpDir=tmp.$HOSTNAME.$$.$RANDOM
+tmpDir=$(mktemp -d --tmpdir produceDataset.XXXXXXXXXX) 
 rm -fr $tmpDir
 
 trainingAndValidationSplit=$splitYear

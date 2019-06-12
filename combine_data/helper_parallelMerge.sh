@@ -34,8 +34,11 @@ mergeScript=$3 # Script to use to merge things
 mirror=$4 # Whether to mirror the output
 
 # Move the file list to a temporary file (in case it's from a temporary file handle)
-files=./.tmp.completeFileList
+files=$(mktemp --tmpdir "files.XXXXXXXXXX")
 cat $tmpfiles > $files
+
+# update EM: creating temporary dir in /tmp for all the tmp files (any previous ./.tmp.XXXX will be /tmp/$myTmpDir/tmp.XXXX)
+myTmpDir=$(mktemp --tmpdir -d "helper_parallelMerge.XXXXXXXXXX")
 
 # Check that mirror argument is binary
 if [[ $mirror -ne 0 && $mirror -ne 1 ]]; then
@@ -56,7 +59,7 @@ elif [[ $totalFileCount -eq 1 ]]; then
 	echo "Only 1 file found. No merging required."
 	singleFile=`cat $files`
 	prevround=0
-	cp $singleFile ./.tmp.merged.$prevround.1
+	cp $singleFile $myTmpDir/tmp.merged.$prevround.1
 fi
 echo "$totalFileCount files found for merge..."
 
@@ -105,38 +108,38 @@ do
 	# Let's check the size of files so that we can balance file sizes to be merged
 	echo $fileList |\
 	tr ',' '\n' |\
-	xargs -I FILE wc -c FILE > ./.tmp.filesizes
+	xargs -I FILE wc -c FILE > $myTmpDir/tmp.filesizes
 	
 	# Order the files by filesize forward and reverse
-	sort -k1,1n ./.tmp.filesizes | cut -f 2 -d ' ' > ./.tmp.fileorder1
-	sort -k1,1nr ./.tmp.filesizes | cut -f 2 -d ' ' > ./.tmp.fileorder2
+	sort -k1,1n $myTmpDir/tmp.filesizes | cut -f 2 -d ' ' > $myTmpDir/tmp.fileorder1
+	sort -k1,1nr $myTmpDir/tmp.filesizes | cut -f 2 -d ' ' > $myTmpDir/tmp.fileorder2
 
 	# Then interleave the file lists and removed duplicates
-	paste -d '\n' ./.tmp.fileorder1 ./.tmp.fileorder2 |\
-	awk ' { if (!($0 in a)) print $0; a[$0] = 1;} ' > ./.tmp.filesbalanced
+	paste -d '\n' $myTmpDir/tmp.fileorder1 $myTmpDir/tmp.fileorder2 |\
+	awk ' { if (!($0 in a)) print $0; a[$0] = 1;} ' > $myTmpDir/tmp.filesbalanced
 
 	# Take the list of files and group them using the $filesTogether argument
-	cat  ./.tmp.filesbalanced |\
-	awk -v filesTogether=$filesTogether '{ printf("%s ", $0); a=a+1; if (a==filesTogether) { a=0; printf("\n"); } } END { if (a>0) printf("\n"); } ' > ./.tmp.joinList
+	cat  $myTmpDir/tmp.filesbalanced |\
+	awk -v filesTogether=$filesTogether '{ printf("%s ", $0); a=a+1; if (a==filesTogether) { a=0; printf("\n"); } } END { if (a>0) printf("\n"); } ' > $myTmpDir/tmp.joinList
 
 	# Take the grouped files and create a list of commands to merge the files
-	cat ./.tmp.joinList |\
-	awk -v round=$round -v script=$mergeScript ' { a=a+1; print "cat "$0" | bash "script" > .tmp.merged."round"."a } ' > ./.tmp.commandList
+	cat $myTmpDir/tmp.joinList |\
+	awk -v round=$round -v script=$mergeScript ' { a=a+1; print "cat "$0" | bash "script" > .tmp.merged."round"."a } ' > $myTmpDir/tmp.commandList
 
 	# Take the command list and execute them across multiple cores using xargs
-	cat ./.tmp.commandList |\
+	cat $myTmpDir/tmp.commandList |\
 	tr '\n' '\0'|\
 	xargs -0 -P $cpuCount -I COMMAND sh -c "COMMAND"
 	
 	# Clean up the files from previous rounds and other extraneous files
 	# Note that these won't be deleted when we finally merge down to one file (in which case, the loop is escaped above
-	rm -f ./.tmp.merged.$prevround.*
-	rm ./.tmp.joinList
-	rm ./.tmp.commandList
-	rm ./.tmp.filesizes
-	rm ./.tmp.fileorder1
-	rm ./.tmp.fileorder2
-	rm ./.tmp.filesbalanced
+	rm -f $myTmpDir/tmp.merged.$prevround.*
+	rm $myTmpDir/tmp.joinList
+	rm $myTmpDir/tmp.commandList
+	rm $myTmpDir/tmp.filesizes
+	rm $myTmpDir/tmp.fileorder1
+	rm $myTmpDir/tmp.fileorder2
+	rm $myTmpDir/tmp.filesbalanced
 
 	# Build a new file=list with the reduced number of output files
 	fileList=`find ./ -name ".tmp.merged.$round.*" | tr '\n' ',' | sed -e 's/,$//'`
@@ -145,10 +148,10 @@ do
 done
 
 # We have now reduced the multiple set of input files down to a single file
-# This file is at ./.tmp.merged.$prevround.1
+# This file is at $myTmpDir/tmp.merged.$prevround.1
 
 # Let's just do a sanity check that the final file exists
-if ! [ -r ./.tmp.merged.$prevround.1 ]; then
+if ! [ -r $myTmpDir/tmp.merged.$prevround.1 ]; then
 	echo "ERROR: Cannot find final merged files. Merge has failed unexpectedly."
 	exit 255
 fi
@@ -156,11 +159,11 @@ fi
 echo "Processing final file..."
 # If we should mirror it, do it and save it to the output path
 if [[ $mirror -eq 1 ]]; then
-	cat ./.tmp.merged.$prevround.1 | awk -F $'\t' ' { print $1"\t"$2"\t"$3; print $2"\t"$1"\t"$3; } ' > $outFile
-	rm ./.tmp.merged.$prevround.1
+	cat $myTmpDir/tmp.merged.$prevround.1 | awk -F $'\t' ' { print $1"\t"$2"\t"$3; print $2"\t"$1"\t"$3; } ' > $outFile
+	rm $myTmpDir/tmp.merged.$prevround.1
 # Otherwise just move the final file to the output path
 else
-	mv ./.tmp.merged.$prevround.1 $outFile
+	mv $myTmpDir/tmp.merged.$prevround.1 $outFile
 fi
 echo "Final file complete."
 
