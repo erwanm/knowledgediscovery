@@ -96,10 +96,11 @@ do
 
 	# Check how many files we need to merge
 	fileCount=`echo $fileList | tr ',' '\n' | wc -l`
+	echo "DEBUG: round $round fileCount=$fileCount" 1>&2
 	
 	# Quit if we only need to merge one file
 	if [[ $fileCount -eq 1 ]]; then
-		echo "Merge has reduced data to one file."
+		echo "Merge has reduced data to one file: '$fileList'"
 		break
 	fi
 
@@ -124,13 +125,14 @@ do
 
 	# Take the grouped files and create a list of commands to merge the files
 	cat $myTmpDir/tmp.joinList |\
-	awk -v round=$round -v script=$mergeScript ' { a=a+1; print "cat "$0" | bash "script" > .tmp.merged."round"."a } ' > $myTmpDir/tmp.commandList
+	awk -v round=$round -v script=$mergeScript -v myTmpDir=$myTmpDir ' { a=a+1; print "cat "$0" | bash "script" > "myTmpDir"/tmp.merged."round"."a } ' > $myTmpDir/tmp.commandList
 
 	# Take the command list and execute them across multiple cores using xargs
 	cat $myTmpDir/tmp.commandList |\
 	tr '\n' '\0'|\
 	xargs -0 -P $cpuCount -I COMMAND sh -c "COMMAND"
 	
+
 	# Clean up the files from previous rounds and other extraneous files
 	# Note that these won't be deleted when we finally merge down to one file (in which case, the loop is escaped above
 	rm -f $myTmpDir/tmp.merged.$prevround.*
@@ -142,7 +144,7 @@ do
 	rm $myTmpDir/tmp.filesbalanced
 
 	# Build a new file=list with the reduced number of output files
-	fileList=`find ./ -name ".tmp.merged.$round.*" | tr '\n' ',' | sed -e 's/,$//'`
+	fileList=$(find $myTmpDir -name "tmp.merged.$round.*" |  tr '\n' ',' | sed -e 's/,$//')
 	
 	echo "Completed round $round of $totalRoundCount."
 done
