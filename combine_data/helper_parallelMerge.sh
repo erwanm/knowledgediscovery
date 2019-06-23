@@ -2,7 +2,7 @@
 set -e
 
 usage() {
-	echo "Usage: bash `basename $0` files outFile mergeScript mirror"
+	echo "Usage: bash `basename $0` files outFile mirror"
 	echo ""
 	echo "This script merges multiple files using a reduction method and depends on the passed in script."
 	echo "The code works in a parallel fashion and will attempt to use all cores of the machine."
@@ -15,7 +15,9 @@ usage() {
 	echo "  mirror - Whether to mirror the data across the matrix (expecting 0 or 1) - for use with coordinate based data (e.g. for a sparse matrix)"
 	echo ""
 }
-expectedArgs=4
+expectedArgs=3
+
+HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Show help message if desired
 if [[ $1 == "-h" || $1 == '--help' ]]; then
@@ -30,8 +32,8 @@ fi
 
 tmpfiles=$1 # A file containing a list of paths to files to merge
 outFile=$2 # The output file
-mergeScript=$3 # Script to use to merge things
-mirror=$4 # Whether to mirror the output
+#mergeScript=$3 # Script to use to merge things
+mirror=$3 # Whether to mirror the output
 
 # Move the file list to a temporary file (in case it's from a temporary file handle)
 files=$(mktemp --tmpdir "files.XXXXXXXXXX")
@@ -124,8 +126,11 @@ do
 	awk -v filesTogether=$filesTogether '{ printf("%s ", $0); a=a+1; if (a==filesTogether) { a=0; printf("\n"); } } END { if (a>0) printf("\n"); } ' > $myTmpDir/tmp.joinList
 
 	# Take the grouped files and create a list of commands to merge the files
-	cat $myTmpDir/tmp.joinList |\
-	awk -v round=$round -v script=$mergeScript -v myTmpDir=$myTmpDir ' { a=a+1; print "cat "$0" | bash "script" > "myTmpDir"/tmp.merged."round"."a } ' > $myTmpDir/tmp.commandList
+	a=1
+	cat $myTmpDir/tmp.joinList | while read files; do
+	    echo "perl $HERE/helper_merge_Nkeys.pl $files >$myTmpDir/tmp.merged.$round.$a"
+	    a=$(( $a + 1 ))
+	done  > $myTmpDir/tmp.commandList
 
 	# Take the command list and execute them across multiple cores using xargs
 	cat $myTmpDir/tmp.commandList |\

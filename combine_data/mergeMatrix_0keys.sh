@@ -33,6 +33,6 @@ HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 echo "Starting parallel merge..."
 # Run the parallel merge script and pass in a file-list using a search of $inDir
-bash $HERE/helper_parallelMerge.sh <(find -L $inPrefix -type f) $outMatrix $HERE/helper_merge_0keys.sh $mirror
+bash $HERE/helper_parallelMerge.sh <(find -L $inPrefix -type f) $outMatrix $mirror
 echo "Completed parallel merge."
 

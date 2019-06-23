@@ -50,10 +50,12 @@ cat $tmpDir/trainingAndValidationFiles.cooccurrences | xargs -I FILE ln -s FILE 
 cat $tmpDir/trainingAndValidationFiles.occurrences | xargs -I FILE ln -s FILE $tmpDir/trainingAndValidation/occurrences
 cat $tmpDir/trainingAndValidationFiles.sentenceCounts | xargs -I FILE ln -s FILE $tmpDir/trainingAndValidation/sentenceCounts
 
+
 # 
-bash $HERE/mergeMatrix_2keys.sh $tmpDir/trainingAndValidation/cooccurrences/ $outDir/trainingAndValidation.cooccurrences
-bash $HERE/mergeMatrix_1key.sh $tmpDir/trainingAndValidation/occurrences $outDir/trainingAndValidation.occurrences.unfiltered
-bash $HERE/mergeMatrix_0keys.sh $tmpDir/trainingAndValidation/sentenceCounts $outDir/trainingAndValidation.sentenceCounts
+# find -L  -type f | perl $HERE/helper_merge_Nkeys.pl -i
+find -L $tmpDir/trainingAndValidation/cooccurrences/ -type f | perl $HERE/helper_merge_Nkeys.pl -i   >$outDir/trainingAndValidation.cooccurrences
+find -L $tmpDir/trainingAndValidation/occurrences -type f | perl $HERE/helper_merge_Nkeys.pl -i >$outDir/trainingAndValidation.occurrences.unfiltered
+find -L $tmpDir/trainingAndValidation/sentenceCounts -type f | perl $HERE/helper_merge_Nkeys.pl -i > $outDir/trainingAndValidation.sentenceCounts
 
 # Get the list of term IDs that actually occur in cooccurrences
 cat $outDir/trainingAndValidation.cooccurrences | cut -f 1,2 -d $'\t' | tr '\t' '\n' | sort -un > $outDir/trainingAndValidation.ids
@@ -81,9 +83,9 @@ cat $tmpDir/trainingFiles.cooccurrences | xargs -I FILE ln -s FILE $tmpDir/train
 cat $tmpDir/trainingFiles.occurrences | xargs -I FILE ln -s FILE $tmpDir/training/occurrences
 cat $tmpDir/trainingFiles.sentenceCounts | xargs -I FILE ln -s FILE $tmpDir/training/sentenceCounts
 
-bash $HERE/mergeMatrix_2keys.sh $tmpDir/training/cooccurrences/ $outDir/training.cooccurrences
-bash $HERE/mergeMatrix_1key.sh $tmpDir/training/occurrences $outDir/training.occurrences.unfiltered
-bash $HERE/mergeMatrix_0keys.sh $tmpDir/training/sentenceCounts $outDir/training.sentenceCounts
+find -L $tmpDir/training/cooccurrences/ -type f | perl $HERE/helper_merge_Nkeys.pl -i > $outDir/training.cooccurrences
+find -L $tmpDir/training/occurrences -type f | perl $HERE/helper_merge_Nkeys.pl -i > $outDir/training.occurrences.unfiltered
+find -L $tmpDir/training/sentenceCounts -type f | perl $HERE/helper_merge_Nkeys.pl -i > $outDir/training.sentenceCounts
 
 # Get the list of term IDs that actually occur in cooccurrences
 cat $outDir/training.cooccurrences | cut -f 1,2 -d $'\t' | tr '\t' '\n' | sort -un > $outDir/training.ids
@@ -101,7 +103,7 @@ mkdir -p $tmpDir/validation/$splitYear/cooccurrences
 
 ln -s $cooccurrenceDir/$splitYear* $tmpDir/validation/$splitYear/cooccurrences
 
-bash $HERE/mergeMatrix_2keys.sh $tmpDir/validation/$splitYear/cooccurrences $outDir/validation.cooccurrences
+find -L $tmpDir/validation/$splitYear/cooccurrences -type f | perl $HERE/helper_merge_Nkeys.pl -i >$outDir/validation.cooccurrences
 
 perl $HERE/filterCooccurrences.pl $outDir/validation.cooccurrences $outDir/training.ids $outDir/training.cooccurrences $outDir/validation.cooccurrences.tmp
 mv $outDir/validation.cooccurrences.tmp $outDir/validation.cooccurrences
@@ -123,7 +125,7 @@ do
 	#ln -s $occurrenceDir/$testYear* $tmpDir/testing/$testYear/occurrences
 	#ln -s $sentenceCountDir/$testYear* $tmpDir/testing/$testYear/sentenceCounts
 	
-	bash $HERE/mergeMatrix_2keys.sh $tmpDir/testing/$testYear/cooccurrences $outDir/testing.$testYear.cooccurrences.unfiltered
+	find -L $tmpDir/testing/$testYear/cooccurrences -type f | perl $HERE/helper_merge_Nkeys.pl -i >$outDir/testing.$testYear.cooccurrences.unfiltered
 
         perl $HERE/filterCooccurrences.pl $outDir/testing.$testYear.cooccurrences.unfiltered $outDir/trainingAndValidation.ids $outDir/tracking.cooccurrences $outDir/testing.$testYear.cooccurrences
 
@@ -137,13 +139,14 @@ do
 	ln -s $outDir/tracking.cooccurrences $tmpDir/tmpMerge/
 	ln -s $outDir/testing.$testYear.cooccurrences $tmpDir/tmpMerge/
 
-	bash $HERE/mergeMatrix_2keys.sh $tmpDir/tmpMerge/ $outDir/tracking.cooccurrences.tmp
+	find -L $tmpDir/tmpMerge/ -type f | perl $HERE/helper_merge_Nkeys.pl -i >$outDir/tracking.cooccurrences.tmp
+	
 	mv $outDir/tracking.cooccurrences.tmp $outDir/tracking.cooccurrences
 	rm -fr $tmpDir/tmpMerge
 done
 
 # Now we make the combined version of all the test cooccurrences
-bash $HERE/mergeMatrix_2keys.sh "$outDir/testing.*.cooccurrences" $outDir/testing.all.cooccurrences
+find -L "$outDir/testing.*.cooccurrences" -type f | perl $HERE/helper_merge_Nkeys.pl -i >$outDir/testing.all.cooccurrences
 
 # Now we subset the combined test cooccurrences
 sort -R $outDir/testing.all.cooccurrences > $outDir/testing.all.cooccurrences.randomOrder
@@ -159,7 +162,7 @@ rm $outDir/validation.cooccurrences.randomOrder
 mkdir $tmpDir/all.cooccurrences
 find $outDir -type f -name 'testing.*.unfiltered' | xargs -I FILE ln -s FILE $tmpDir/all.cooccurrences/
 ln -s $outDir/trainingAndValidation.cooccurrences $tmpDir/all.cooccurrences/
-bash $HERE/mergeMatrix_2keys.sh $tmpDir/all.cooccurrences $outDir/all.cooccurrences
+find -L $tmpDir/all.cooccurrences -type f | perl $HERE/helper_merge_Nkeys.pl -i >$outDir/all.cooccurrences
 
 # And calculate the appropriate IDs for that set
 cat $outDir/all.cooccurrences | cut -f 1,2 -d $'\t' | tr '\t' '\n' | sort -un > $outDir/all.ids
