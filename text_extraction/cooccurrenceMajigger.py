@@ -14,7 +14,12 @@ def extractTermCoOccurrences_OneList(outFile, textInput, textSourceInfo):
 		textList = textInput
 	else:
 		textList = [textInput]
-	
+
+        if os.path.isfile(outFile.name+".tok"):
+                myfile = codecs.open(outFile.name+".tok", "a", "utf-8")
+        else:
+                myfile = codecs.open(outFile.name+".tok", "w", "utf-8")
+
 	# Go through each bit of text
 	for text in textList:
 		# Remove weird text issues
@@ -23,15 +28,22 @@ def extractTermCoOccurrences_OneList(outFile, textInput, textSourceInfo):
 		# Split the text into sentences
 		sentences = sentenceSplit(text)
 
+#                sentList = []
+
 		# Extract each sentence
 		for sentence in sentences:
 			
 			# Tokenize each sentence
 			tokens = tokenize(sentence)
 			
+ #                       sentList.append(' '.join(tokens))
+                        myfile.write("%s\t%s\t%s\n" % (textSourceInfo['pmid'], textSourceInfo['pubYear'], ' '.join(tokens) ))
+
 			# Get the IDs of terms found in the sentence
 			termIDs = getID_FromLongestTerm(tokens, mainWordlist)
 			
+
+
 			#print "-------------------------"
 			#print sentence
 			#print tokens
@@ -52,10 +64,10 @@ def extractTermCoOccurrences_OneList(outFile, textInput, textSourceInfo):
 			for i in termIDs:
 				outFile.write("OCCURRENCE\t%d\t%d\n" % (i, 1))
 
-		# Print out the number of sentences
+                # Print out the number of sentences
 		sentenceCount = len(sentences)
 		outFile.write("SENTENCECOUNT\t%d\n" % (sentenceCount))
-		
+	myfile.close()	
 		
 # It's the main bit. Yay!
 if __name__ == "__main__":

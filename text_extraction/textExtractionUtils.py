@@ -235,7 +235,14 @@ def extractTextFromElemList(elemList):
 # Pass in the file object, the mode to parse it with and whether to merge the output
 def processAbstractFile(abstractFile, outFile, processFunction):
 	count = 0
-	
+
+	myfile = codecs.open(outFile.name+".raw", "w", "utf-8")
+
+        # EM. following line removes any existing previous version of the tokenized output, because 
+        #     it's repeatedly open in APPEND mode later.
+        if os.path.isfile(outFile.name+".tok"):
+                os.remove(outFile.name+".tok") 
+
 	# These XML files are huge, so skip through each MedlineCitation element using etree
 	for event, elem in etree.iterparse(abstractFile, events=('start', 'end', 'start-ns', 'end-ns')):
 		if (event=='end' and elem.tag=='MedlineCitation'):
@@ -273,15 +280,26 @@ def processAbstractFile(abstractFile, outFile, processFunction):
 			allText = [ t for t in allText if len(t) > 0 ]
 			allText = [ htmlUnescape(t) for t in allText ]
 			allText = [ removeBracketsWithoutWords(t) for t in allText ]
-			
+
+			titleText = [ t for t in titleText if len(t) > 0 ]
+			titleText = [ htmlUnescape(t) for t in titleText ]
+			titleText = [ removeBracketsWithoutWords(t) for t in titleText ]
+
+			abstractText = [ t for t in abstractText if len(t) > 0 ]
+			abstractText = [ htmlUnescape(t) for t in  abstractText ]
+			abstractText = [ removeBracketsWithoutWords(t) for t in  abstractText ]
+
 			# Information about the source of this text
 			textSourceInfo = {'pmid':pmidText, 'pmcid':pmcidText, 'pubYear':pubYear}
+
+                        myfile.write("%s\t%s\t%s\t%s\n" % (textSourceInfo["pmid"], textSourceInfo["pubYear"], ' '.join(titleText), ' '.join(abstractText) ))
 			
 			# Get the co-occurrences using a single list
 			processFunction(outFile, allText, textSourceInfo)
 			
 			# Important: clear the current element from memory to keep memory usage low
 			elem.clear()
+        myfile.close()
 			
 	
 def getMetaInfoForPMCArticle(articleElem):
@@ -311,6 +329,17 @@ def getMetaInfoForPMCArticle(articleElem):
 def processArticleFiles(filelist, outFile, processFunction):
 	if not isinstance(filelist, list):
 		filelist = [filelist]
+
+#        print "INFO filelist = ", filelist
+#        print "INFO outFile = ", outFile.name
+
+	myfile = codecs.open(outFile.name+".raw", "w", "utf-8")
+
+        # EM. following line removes any existing previous version of the tokenized output, because 
+        #     it's repeatedly open in APPEND mode later.
+        if os.path.isfile(outFile.name+".tok"):
+                os.remove(outFile.name+".tok") 
+
 
 	# Go through the list of filenames and open each one
 	for filename in filelist:
@@ -342,8 +371,8 @@ def processArticleFiles(filelist, outFile, processFunction):
 							
 						# Information about the source of this text
 						textSourceInfo = {'pmid':subPmidText, 'pmcid':subPmcidText, 'doi':subDoiText, 'pubYear':subPubYear}
-							
 						
+
 						# Extract the title of paper
 						title = articleElem.findall('./front/article-meta/title-group/article-title') + articleElem.findall('./front-stub/title-group/article-title')
 						assert len(title) <= 1
@@ -369,12 +398,33 @@ def processArticleFiles(filelist, outFile, processFunction):
 						allText = [ t for t in allText if len(t) > 0 ]
 						allText = [ htmlUnescape(t) for t in allText ]
 						allText = [ removeBracketsWithoutWords(t) for t in allText ]
+
+						titleText = titleText + subtitleText 
+						titleText = [ t for t in titleText if len(t) > 0 ]
+						titleText = [ htmlUnescape(t) for t in titleText ]
+						titleText = [ removeBracketsWithoutWords(t) for t in titleText ]
+
+						abstractText = abstractText 
+						abstractText = [ t for t in abstractText if len(t) > 0 ]
+						abstractText = [ htmlUnescape(t) for t in  abstractText ]
+						abstractText = [ removeBracketsWithoutWords(t) for t in  abstractText ]
+
+						articleText = articleText + backText + floatingText
+						articleText = [ t for t in articleText if len(t) > 0 ]
+						articleText = [ htmlUnescape(t) for t in articleText ]
+						articleText = [ removeBracketsWithoutWords(t) for t in articleText ]
+
 						
+                                                myfile.write("%s\t%s\t%s\t%s\t%s\n" % (textSourceInfo["pmid"], textSourceInfo["pubYear"], ' '.join(titleText), ' '.join(abstractText), ' '.join(articleText) ))
+
 						# Get the co-occurrences using a single list
 						processFunction(outFile, allText, textSourceInfo)
 				
 					# Less important here (compared to abstracts) as each article file is not too big
 					elem.clear()
+        myfile.close()
+
+
 
 # Load a word-list file into a dictionary with IDs
 # Allow removal of stopwords and short words
