@@ -7,7 +7,7 @@ import itertools
 from textExtractionUtils import *
 	
 # Find all co-occurrences for a list of text, or just a line of text
-def extractTermCoOccurrences_OneList(outFile, textInput, textSourceInfo):
+def extractTermCoOccurrences_OneList(outFile, textInput, textSourceInfo, partId, elemId):
 
 	# First check if it is a list of text or just text
 	if isinstance(textInput, list):
@@ -20,6 +20,11 @@ def extractTermCoOccurrences_OneList(outFile, textInput, textSourceInfo):
         else:
                 myfile = codecs.open(outFile.name+".tok", "w", "utf-8")
 
+        if os.path.isfile(outFile.name+".cuis"):
+                myfile2 = codecs.open(outFile.name+".cuis", "a", "utf-8")
+        else:
+                myfile2 = codecs.open(outFile.name+".cuis", "w", "utf-8")
+
 	# Go through each bit of text
 	for text in textList:
 		# Remove weird text issues
@@ -31,18 +36,22 @@ def extractTermCoOccurrences_OneList(outFile, textInput, textSourceInfo):
 #                sentList = []
 
 		# Extract each sentence
-		for sentence in sentences:
+                for sentNo, sentence in enumerate(sentences):
 			
 			# Tokenize each sentence
 			tokens = tokenize(sentence)
 			
  #                       sentList.append(' '.join(tokens))
-                        myfile.write("%s\t%s\t%s\n" % (textSourceInfo['pmid'], textSourceInfo['pubYear'], ' '.join(tokens) ))
+                        myfile.write("%s\t%s\t%s\t%s\t%d\t%s\n" % (textSourceInfo['pmid'], textSourceInfo['pubYear'], partId, elemId, sentNo, ' '.join(tokens) ))
 
 			# Get the IDs of terms found in the sentence
-			termIDs = getID_FromLongestTerm(tokens, mainWordlist)
-			
+			termIDsPos = getID_FromLongestTerm(tokens, mainWordlist)
 
+                        # EM ADDITION
+                        termsIDs= []
+                        for cuiIds, pos, length in termIDsPos:
+                                termsIDs=termsIDs + cuiIds
+                                myfile2.write("%s\t%s\t%s\t%d\t%s\t%d\t%d\n" % (textSourceInfo['pmid'], partId, elemId, sentNo, ",".join(str(x) for x in cuiIds), pos, length) )
 
 			#print "-------------------------"
 			#print sentence
@@ -53,7 +62,9 @@ def extractTermCoOccurrences_OneList(outFile, textInput, textSourceInfo):
 			#print
 			
 			# Remove duplicates from the termIDs
-			termIDs = set(termIDs)
+			termIDs = set(termsIDs)
+
+                                
 			
 			# Print co-occurrences to output file immediately
 			for (i,j) in itertools.product(termIDs,termIDs):

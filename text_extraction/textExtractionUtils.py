@@ -154,7 +154,7 @@ def getID_FromLongestTerm(np, lookupDict):
 			# Search for it in the dictionary
 			if s in lookupDict:
 				# If found, save the ID(s) in the dictionary
-				terms = terms + lookupDict[s]
+				terms = terms + [ (lookupDict[s], i, l) ]
 				# And blank it out
 				np[i:i+l] = [ "" for _ in range(l) ]
 				
@@ -242,6 +242,8 @@ def processAbstractFile(abstractFile, outFile, processFunction):
         #     it's repeatedly open in APPEND mode later.
         if os.path.isfile(outFile.name+".tok"):
                 os.remove(outFile.name+".tok") 
+        if os.path.isfile(outFile.name+".cuis"):
+                os.remove(outFile.name+".cuis") 
 
 	# These XML files are huge, so skip through each MedlineCitation element using etree
 	for event, elem in etree.iterparse(abstractFile, events=('start', 'end', 'start-ns', 'end-ns')):
@@ -265,37 +267,27 @@ def processAbstractFile(abstractFile, outFile, processFunction):
 				pubYear = yearFields[0].text
 			if len(medlineDateFields) > 0:
 				pubYear = medlineDateFields[0].text[0:4]
-				
+
+			textSourceInfo = {'pmid':pmidText, 'pmcid':pmcidText, 'pubYear':pubYear}
+
 			# Extract the title of paper
+                        data = {}
 			title = elem.findall('./Article/ArticleTitle')
-			titleText = extractTextFromElemList(title)
-			titleText = [ removeWeirdBracketsFromOldTitles(t) for t in titleText ]
+			data["title"] = extractTextFromElemList(title)
+			data["title"] = [ removeWeirdBracketsFromOldTitles(t) for t in data["title"] ]
 			
 			# Extract the abstract from the paper
 			abstract = elem.findall('./Article/Abstract/AbstractText')
-			abstractText = extractTextFromElemList(abstract)
-			
-			# Combine all the text we want to process
-			allText = titleText + abstractText
-			allText = [ t for t in allText if len(t) > 0 ]
-			allText = [ htmlUnescape(t) for t in allText ]
-			allText = [ removeBracketsWithoutWords(t) for t in allText ]
+			data["abstract"] = extractTextFromElemList(abstract)
 
-			titleText = [ t for t in titleText if len(t) > 0 ]
-			titleText = [ htmlUnescape(t) for t in titleText ]
-			titleText = [ removeBracketsWithoutWords(t) for t in titleText ]
-
-			abstractText = [ t for t in abstractText if len(t) > 0 ]
-			abstractText = [ htmlUnescape(t) for t in  abstractText ]
-			abstractText = [ removeBracketsWithoutWords(t) for t in  abstractText ]
-
-			# Information about the source of this text
-			textSourceInfo = {'pmid':pmidText, 'pmcid':pmcidText, 'pubYear':pubYear}
-
-                        myfile.write("%s\t%s\t%s\t%s\n" % (textSourceInfo["pmid"], textSourceInfo["pubYear"], ' '.join(titleText), ' '.join(abstractText) ))
-			
-			# Get the co-occurrences using a single list
-			processFunction(outFile, allText, textSourceInfo)
+                        for part in data:
+                                if len(data[part]) > 0:
+                                        for itemNo,t in enumerate(data[part]):
+                                                t0 = htmlUnescape(t)
+                                                t1 = removeBracketsWithoutWords(t0)
+                                                processFunction(outFile, t1, textSourceInfo, part, str(itemNo))
+                                
+                        myfile.write("%s\t%s\t%s\t%s\n" % (textSourceInfo["pmid"], textSourceInfo["pubYear"], ' '.join(data["title"]), ' '.join(data["abstract"]) ))
 			
 			# Important: clear the current element from memory to keep memory usage low
 			elem.clear()
@@ -339,6 +331,8 @@ def processArticleFiles(filelist, outFile, processFunction):
         #     it's repeatedly open in APPEND mode later.
         if os.path.isfile(outFile.name+".tok"):
                 os.remove(outFile.name+".tok") 
+        if os.path.isfile(outFile.name+".cuis"):
+                os.remove(outFile.name+".cuis") 
 
 
 	# Go through the list of filenames and open each one
@@ -356,7 +350,8 @@ def processArticleFiles(filelist, outFile, processFunction):
 					# that'll be used, otherwise the parent article IDs will be used
 					subarticles = [elem] + elem.findall('./sub-article')
 					
-					for articleElem in subarticles:
+                                        for articleElemNo, articleElem in enumerate(subarticles):
+
 						if articleElem == elem:
 							# This is the main parent article. Just use its IDs
 							subPmidText,subPmcidText,subDoiText,subPubYear = pmidText,pmcidText,doiText,pubYear
@@ -376,49 +371,36 @@ def processArticleFiles(filelist, outFile, processFunction):
 						# Extract the title of paper
 						title = articleElem.findall('./front/article-meta/title-group/article-title') + articleElem.findall('./front-stub/title-group/article-title')
 						assert len(title) <= 1
-						titleText = extractTextFromElemList(title)
-						titleText = [ removeWeirdBracketsFromOldTitles(t) for t in titleText ]
+
+                                                data = {}
+						data["title"] = extractTextFromElemList(title)
+						data["title"] = [ removeWeirdBracketsFromOldTitles(t) for t in  data["title"] ]
 						
 						# Get the subtitle (if it's there)
 						subtitle = articleElem.findall('./front/article-meta/title-group/subtitle') + articleElem.findall('./front-stub/title-group/subtitle')
-						subtitleText = extractTextFromElemList(subtitle)
-						subtitleText = [ removeWeirdBracketsFromOldTitles(t) for t in subtitleText ]
+						data["subtitle"] = extractTextFromElemList(subtitle)
+						data["subtitle"] = [ removeWeirdBracketsFromOldTitles(t) for t in data["subtitle"] ]
 						
 						# Extract the abstract from the paper
 						abstract = articleElem.findall('./front/article-meta/abstract') + articleElem.findall('./front-stub/abstract')
-						abstractText = extractTextFromElemList(abstract)
+						data["abstract"] = extractTextFromElemList(abstract)
 						
 						# Extract the full text from the paper as well as supplementaries and floating blocks of text
-						articleText = extractTextFromElemList(articleElem.findall('./body'))
-						backText = extractTextFromElemList(articleElem.findall('./back'))
-						floatingText = extractTextFromElemList(articleElem.findall('./floats-group'))
+						data["article"] = extractTextFromElemList(articleElem.findall('./body'))
+						data["back"] = extractTextFromElemList(articleElem.findall('./back'))
+						data["floating"] = extractTextFromElemList(articleElem.findall('./floats-group'))
 						
-						# Combine all the text we want to process
-						allText = titleText + subtitleText + abstractText + articleText + backText + floatingText
-						allText = [ t for t in allText if len(t) > 0 ]
-						allText = [ htmlUnescape(t) for t in allText ]
-						allText = [ removeBracketsWithoutWords(t) for t in allText ]
 
-						titleText = titleText + subtitleText 
-						titleText = [ t for t in titleText if len(t) > 0 ]
-						titleText = [ htmlUnescape(t) for t in titleText ]
-						titleText = [ removeBracketsWithoutWords(t) for t in titleText ]
+                                                for part in data:
+                                                        if len(data[part]) > 0:
+                                                                for itemNo,t in enumerate(data[part]):
+                                                                        t0 = htmlUnescape(t)
+                                                                        t1 = removeBracketsWithoutWords(t0)
+                                                                        processFunction(outFile, t1, textSourceInfo, part, str(articleElemNo)+"."+str(itemNo))
+                                
+                                                myfile.write("%s\t%s\t%s\t%s\t%s\n" % (textSourceInfo["pmid"], textSourceInfo["pubYear"], ' '.join(data["title"]+data["subtitle"]), ' '.join(data["abstract"]), ' '.join(data["article"]+data["back"]+data["floating"]) ))
 
-						abstractText = abstractText 
-						abstractText = [ t for t in abstractText if len(t) > 0 ]
-						abstractText = [ htmlUnescape(t) for t in  abstractText ]
-						abstractText = [ removeBracketsWithoutWords(t) for t in  abstractText ]
 
-						articleText = articleText + backText + floatingText
-						articleText = [ t for t in articleText if len(t) > 0 ]
-						articleText = [ htmlUnescape(t) for t in articleText ]
-						articleText = [ removeBracketsWithoutWords(t) for t in articleText ]
-
-						
-                                                myfile.write("%s\t%s\t%s\t%s\t%s\n" % (textSourceInfo["pmid"], textSourceInfo["pubYear"], ' '.join(titleText), ' '.join(abstractText), ' '.join(articleText) ))
-
-						# Get the co-occurrences using a single list
-						processFunction(outFile, allText, textSourceInfo)
 				
 					# Less important here (compared to abstracts) as each article file is not too big
 					elem.clear()
