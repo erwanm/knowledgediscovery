@@ -307,13 +307,19 @@ def getMetaInfoForPMCArticle(articleElem):
 			pmcidText = a.text.strip().replace('\n',' ')
 		if a.text and 'pub-id-type' in a.attrib and a.attrib['pub-id-type'] == 'doi':
 			doiText = a.text.strip().replace('\n',' ')
-			
+	
+        if pmidText == '':
+		pmidText = "NOPMID-"+pmcidText
+
 	# Attempt to get the publication date
 	pubdates = articleElem.findall('./front/article-meta/pub-date') + articleElem.findall('./front-stub/pub-date')
 	pubYear = ""
 	if len(pubdates) >= 1:
 		pubYear = pubdates[0].find("year").text.strip().replace('\n',' ')
 			
+        if pubYear == '':
+                pubYear = 0
+
 	return pmidText,pmcidText,doiText,pubYear
 	
 # Process a block of PubMed Central files
