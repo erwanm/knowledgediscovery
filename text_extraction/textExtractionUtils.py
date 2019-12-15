@@ -294,7 +294,7 @@ def processAbstractFile(abstractFile, outFile, processFunction):
         myfile.close()
 			
 	
-def getMetaInfoForPMCArticle(articleElem):
+def getMetaInfoForPMCArticle(articleElem,idNoPMID):
 	# Attempt to extract the PubMed ID, PubMed Central IDs and DOIs
 	pmidText = ''
 	pmcidText = ''
@@ -309,7 +309,8 @@ def getMetaInfoForPMCArticle(articleElem):
 			doiText = a.text.strip().replace('\n',' ')
 	
         if pmidText == '':
-		pmidText = "NOPMID-"+pmcidText
+		pmidText = "NOPMID-"+ str(idNoPMID)
+                idNoPMID = idNoPMID + 1
 
 	# Attempt to get the publication date
 	pubdates = articleElem.findall('./front/article-meta/pub-date') + articleElem.findall('./front-stub/pub-date')
@@ -320,7 +321,7 @@ def getMetaInfoForPMCArticle(articleElem):
         if pubYear == '':
                 pubYear = 0
 
-	return pmidText,pmcidText,doiText,pubYear
+	return pmidText,pmcidText,doiText,pubYear,idNoPMID
 	
 # Process a block of PubMed Central files
 # Pass in the list of filenames, the mode to parse it with and whether to merge the output
@@ -341,6 +342,7 @@ def processArticleFiles(filelist, outFile, processFunction):
                 os.remove(outFile.name+".cuis") 
 
 
+        idNoPMID = 0
 	# Go through the list of filenames and open each one
 	for filename in filelist:
 		with open(filename, 'r') as openfile:
@@ -349,7 +351,7 @@ def processArticleFiles(filelist, outFile, processFunction):
 			for event, elem in etree.iterparse(openfile, events=('start', 'end', 'start-ns', 'end-ns')):
 				if (event=='end' and elem.tag=='article'):
 				
-					pmidText,pmcidText,doiText,pubYear = getMetaInfoForPMCArticle(elem)
+					pmidText,pmcidText,doiText,pubYear,idNoPMID = getMetaInfoForPMCArticle(elem,idNoPMID)
 
 					# We're going to process the main article along with any subarticles
 					# And if any of the subarticles have distinguishing IDs (e.g. PMID), then
@@ -363,7 +365,7 @@ def processArticleFiles(filelist, outFile, processFunction):
 							subPmidText,subPmcidText,subDoiText,subPubYear = pmidText,pmcidText,doiText,pubYear
 						else:
 							# Check if this subarticle has any distinguishing IDs and use them instead
-							subPmidText,subPmcidText,subDoiText,subPubYear = getMetaInfoForPMCArticle(articleElem)
+							subPmidText,subPmcidText,subDoiText,subPubYear,idNoPMID = getMetaInfoForPMCArticle(articleElem,idNoPMID)
 							if subPmidText=='' and subPmcidText == '' and subDoiText == '':
 								subPmidText,subPmcidText,subDoiText = pmidText,pmcidText,doiText
 							if subPubYear == '':
