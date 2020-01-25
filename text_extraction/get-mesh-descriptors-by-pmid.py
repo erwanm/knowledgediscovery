@@ -16,6 +16,25 @@ from os import listdir
 from os.path import isfile, join
 
 
+
+#
+# Erwan Moreau Jan 2020, based on 'knowledgediscovery' code by Jack Lever
+#
+# This script reads a dir of medline xml files as extracted by Jack Lever's system and for each PMID writes the list
+# of associated Mesh descriptors, together with the value for 'MajorTopicYN' as follows:
+#
+#
+# 10277409        D005845|N,D006268|Y,D006273|Y,D006739|Y,D006786|N,D014481|N
+# 10277408        D006749|N,D014481|N
+# 10277410        D001154|Y,D001265|N,D003615|Y,D006757|Y,D006801|N,D009146|Y,D014481|N
+# 10277411        D006761|Y,D009722|N,D014146|N,D014481|N,D014492|N
+# 10277412        D003256|N,D006280|N,D007348|N,D014481|N
+# 10277413        D002983|N,D006264|N,D006279|N,D007348|N,D011243|N,D014481|N
+# 10277414        D002170|N,D003219|Y,D006748|N,D008500|N,D010344|Y,D010817|Y,D014481|N
+# 10277415        D006761|Y,D007258|Y,D009864|N,D010344|Y
+# 10277416        D002170|N,D004992|Y,D010344|N,D014481|N
+# 10277417        D002170|N,D003284|N,D005376|N,D006739|N,D008505|N,D012237|N
+
 	
 # Code for extracting text from Medline/PMC XML files
 
@@ -41,7 +60,7 @@ def processAbstractFile(abstractFile, outFile):
                         meshDescriptors = elem.findall('./MeshHeadingList/MeshHeading/DescriptorName')
 
 
-                        meshIds = ",".join([ meshDescr.attrib['UI'] for meshDescr in meshDescriptors ])
+                        meshIds = ",".join([ meshDescr.attrib['UI']+"|"+meshDescr.attrib['MajorTopicYN']  for meshDescr in meshDescriptors ])
 
 			# Try to extract the pmidID
 			pmidText = ''
