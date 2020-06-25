@@ -43,6 +43,83 @@ ignoreList = ['table', 'table-wrap', 'xref', 'disp-formula', 'inline-formula', '
 
 # XML elements to separate text between
 separationList = ['title', 'p', 'sec', 'break', 'def-item', 'list-item', 'caption']
+
+
+# Some older articles have titles like "[A study of ...]."
+# This removes the brackets while retaining the full stop
+def removeWeirdBracketsFromOldTitles(titleText):
+        titleText = titleText.strip()
+        if titleText[0] == '[' and titleText[-2:] == '].':
+                titleText = titleText[1:-2] + '.'
+        return titleText
+
+
+# Code for extracting text from Medline/PMC XML files
+def extractTextFromElem(elem):
+	textList = []
+	
+	# Extract any raw text directly in XML element or just after
+	head = ""
+	if elem.text:
+		head = elem.text
+	tail = ""
+	if elem.tail:
+		tail = elem.tail
+	
+	# Then get the text from all child XML nodes recursively
+	childText = []
+	for child in elem:
+		childText = childText + extractTextFromElem(child)
+		
+	# Check if the tag should be ignore (so don't use main contents)
+	if elem.tag in ignoreList:
+		return [tail.strip()]
+	# Add a zero delimiter if it should be separated
+	elif elem.tag in separationList:
+		return [0] + [head] + childText + [tail]
+	# Or just use the whole text
+	else:
+		return [head] + childText + [tail]
+	
+
+# Merge a list of extracted text blocks and deal with the zero delimiter
+def extractTextFromElemList_merge(list):
+	textList = []
+	current = ""
+	# Basically merge a list of text, except separate into a new list
+	# whenever a zero appears
+	for t in list:
+		if t == 0: # Zero delimiter so split
+			if len(current) > 0:
+				textList.append(current)
+				current = ""
+		else: # Just keep adding
+			current = current + " " + t
+			current = current.strip()
+	if len(current) > 0:
+		textList.append(current)
+	return textList
+	
+# Main function that extracts text from XML element or list of XML elements
+def extractTextFromElemList(elemList):
+	textList = []
+	# Extracts text and adds delimiters (so text is accidentally merged later)
+	if isinstance(elemList, list):
+		for e in elemList:
+			textList = textList + extractTextFromElem(e) + [0]
+	else:
+		textList = extractTextFromElem(elemList) + [0]
+
+	# Merge text blocks with awareness of zero delimiters
+	mergedList = extractTextFromElemList_merge(textList)
+	
+	# Remove any newlines (as they can be trusted to be syntactically important)
+	mergedList = [ text.replace('\n', ' ') for text in mergedList ]
+	
+	return mergedList
+	
+
+
 	
 # Process a MEDLINE abstract file
 # Pass in the file object, the mode to parse it with and whether to merge the output
@@ -54,23 +131,39 @@ def processAbstractFile(abstractFile, outFile):
 		if (event=='end' and elem.tag=='MedlineCitation'):
 
 			count = count + 1
+
 			
 			# Find the elements for the PubMed ID, and publication date information
 			pmid = elem.findall('./PMID')
-                        meshDescriptors = elem.findall('./MeshHeadingList/MeshHeading/DescriptorName')
-
-
-                        meshIds = ",".join([ meshDescr.attrib['UI']+"|"+meshDescr.attrib['MajorTopicYN']  for meshDescr in meshDescriptors ])
-
 			# Try to extract the pmidID
 			pmidText = ''
 			if len(pmid) > 0:
 				pmidText = " ".join( [a.text.strip() for a in pmid if a.text ] )
 
-#                        print pmidText
- #                       print meshIds
-				
-                        outFile.write("%s\t%s\n" % (pmidText, meshIds  ))
+                        meshDescriptors = elem.findall('./MeshHeadingList/MeshHeading/DescriptorName')
+                        meshIds = ",".join([ meshDescr.attrib['UI']+"|"+meshDescr.attrib['MajorTopicYN']  for meshDescr in meshDescriptors ])
+
+                        yearFields = elem.findall('./Article/Journal/JournalIssue/PubDate/Year')
+                        medlineDateFields = elem.findall('./Article/Journal/JournalIssue/PubDate/MedlineDate')
+                        # Try to extract the publication date
+                        pubYear = 0
+                        if len(yearFields) > 0:
+                                pubYear = yearFields[0].text
+                        if len(medlineDateFields) > 0:
+                                pubYear = medlineDateFields[0].text[0:4]
+
+                        titleElem = elem.findall('./Article/ArticleTitle')
+                        titleText0 = extractTextFromElemList(titleElem)
+                        titleText1 = [ removeWeirdBracketsFromOldTitles(t) for t in titleText0 ]
+                        titleText = ' '.join(titleText1)
+
+                        # Extract journal title
+                        journalElem = elem.findall('./Article/Journal/Title')
+                        journalText0 = extractTextFromElemList(journalElem)
+                        journalText1 = [ removeWeirdBracketsFromOldTitles(t) for t in journalText0 ]
+                        journalText = ' '.join(journalText1)
+
+                        outFile.write("%s\t%s\t%s\t%s\t%s\n" % (pmidText, pubYear, journalText, titleText, meshIds  ))
 			
 			# Important: clear the current element from memory to keep memory usage low
 			elem.clear()
