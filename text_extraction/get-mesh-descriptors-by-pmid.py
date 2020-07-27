@@ -23,6 +23,7 @@ from os.path import isfile, join
 # This script reads a dir of medline xml files as extracted by Jack Lever's system and for each PMID writes the list
 # of associated Mesh descriptors, together with the value for 'MajorTopicYN' as follows:
 #
+# Updated later: added columns <pmid> <year> <pmid version> <journal> <title> <mesh list> 
 #
 # 10277409        D005845|N,D006268|Y,D006273|Y,D006739|Y,D006786|N,D014481|N
 # 10277408        D006749|N,D014481|N
@@ -140,6 +141,9 @@ def processAbstractFile(abstractFile, outFile):
 			if len(pmid) > 0:
 				pmidText = " ".join( [a.text.strip() for a in pmid if a.text ] )
 
+                        # added: extract PMID Version field
+                        pmidVersion = " ".join( [ e.attrib['Version'] for e in pmid ] )
+
                         meshDescriptors = elem.findall('./MeshHeadingList/MeshHeading/DescriptorName')
                         meshIds = ",".join([ meshDescr.attrib['UI']+"|"+meshDescr.attrib['MajorTopicYN']  for meshDescr in meshDescriptors ])
 
@@ -163,7 +167,7 @@ def processAbstractFile(abstractFile, outFile):
                         journalText1 = [ removeWeirdBracketsFromOldTitles(t) for t in journalText0 ]
                         journalText = ' '.join(journalText1)
 
-                        outFile.write("%s\t%s\t%s\t%s\t%s\n" % (pmidText, pubYear, journalText, titleText, meshIds  ))
+                        outFile.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (pmidText, pubYear, pmidVersion, journalText, titleText, meshIds  ))
 			
 			# Important: clear the current element from memory to keep memory usage low
 			elem.clear()
