@@ -260,6 +260,9 @@ def processAbstractFile(abstractFile, outFile, processFunction):
 			if len(pmid) > 0:
 				pmidText = " ".join( [a.text.strip() for a in pmid if a.text ] )
 			pmcidText = ''
+
+                        # added: extract PMID Version field
+                        pmidVersion = " ".join( [ e.attrib['Version'] for e in pmid ] )
 				
 			# Try to extract the publication date
 			pubYear = 0
@@ -268,7 +271,7 @@ def processAbstractFile(abstractFile, outFile, processFunction):
 			if len(medlineDateFields) > 0:
 				pubYear = medlineDateFields[0].text[0:4]
 
-			textSourceInfo = {'pmid':pmidText, 'pmcid':pmcidText, 'pubYear':pubYear}
+			textSourceInfo = {'pmid':pmidText+'.'+pmidVersion, 'pmcid':pmcidText, 'pubYear':pubYear }
 
 			# Extract the title of paper
                         data = {}
