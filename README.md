@@ -44,9 +44,9 @@ Full content of the sentences with ids
 
 ### `.cuis` file
 
-Extracted CUIs by position, i.e. for every position and length where at least one CUI is found the least of candidate CUIs (synonyms).
+Extracted CUIs by position, i.e. for every position and length where at least one CUI is found the list of candidate CUIs (synonyms).
 
-The CUIs are provided as integer ids, as used internally by the KD system.
+The CUIs are provided as integer ids, as used internally by the original KD system.
 
 ```
 <pmid> <partId> <elemId> <sentNo> <cuis list> <position> <length>
