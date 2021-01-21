@@ -1,6 +1,6 @@
 # About this fork
 
-*Caution: these explanations were added a long time after the modification were done and my memory is not perfect.*
+*Caution: these explanations were added a long time after the modifications were done and my memory is not perfect.*
 
 This repository is a fork of [Jake Lever's Knowledge Discovery repository](https://github.com/jakelever/knowledgediscovery). The following modifications were made:
 
