@@ -6,9 +6,9 @@ This repository is a fork of [Jake Lever's Knowledge Discovery repository](https
 
 - Some small updates in the installation process and possibly other parts. In particular the PowerGraph dependency (see below) was replaced with [my own fork](https://github.com/erwanm/PowerGraph) in which a few broken things were fixed.
 - Changes in the "combine data" part of the system (several scripts). These changes were meant as an optimization in this part, but it turned out that which version is faster depends on the machine. So in retrospect this change is questionable, maybe the original version was better. Anyway I left it there because in the end I didn't use this part.
-- Modifications in the term extraction scripts so that a much more detailed output is produced. Originally these scripts only output a file containing the list of cooccurences. The modified version outputs the whole data (including the text of the abstracts/articles by sentence and the position of the UMLS terms (see details below).
+- Modifications in the term extraction scripts so that a much more detailed output is produced. Originally these scripts only output a file containing the list of cooccurences. The modified version outputs the whole data: text of the abstracts/articles by sentence, the position of the UMLS terms and corresponding CUI.
 
-Important note: in my use case I don't use the LBD part of the system, only the data extraction part: downloading and preparing Medline and PMC data, then identifying the occurrences of UMLS terms and annotating the text with their Concept Unique Identifier (CUI). For this part of the process the big PowerGraph dependency is not required.
+**Important note.** In my use case I don't use the LBD part of the system, only the data extraction part: downloading and preparing Medline and PMC data, then identifying the occurrences of UMLS terms and annotating the text with their Concept Unique Identifier (CUI). For this part of the process the (big) PowerGraph dependency is not required.
 
 ### Installation
 
