@@ -1,3 +1,61 @@
+# About this fork
+
+*Caution: these explanations were added a long time after the modification were done and my memory is not perfect.*
+
+This repository is a fork of [Jake Lever's Knowledge Discovery repository](https://github.com/jakelever/knowledgediscovery). The following modifications were made:
+
+- Some small updates in the installation process and possibly other parts. In particular the PowerGraph dependency (see below) was replaced with [my own fork](https://github.com/erwanm/PowerGraph) in which a few broken things were fixed.
+- Changes in the "combine data" part of the system (several scripts). These changes were meant as an optimization in this part, but it turned out that which version is faster depends on the machine. So in retrospect this change is questionable, maybe the original version was better. Anyway I left it there because in the end I didn't use this part.
+- Modifications in the term extraction scripts so that a much more detailed output is produced. Originally these scripts only output a file containing the list of cooccurences. The modified version outputs the whole data (including the text of the abstracts/articles by sentence and the position of the UMLS terms (see details below).
+
+Important note: in my use case I don't use the LBD part of the system, only the data extraction part: downloading and preparing Medline and PMC data, then identifying the occurrences of UMLS terms and annotating the text with their Concept Unique Identifier (CUI). For this part of the process the big PowerGraph dependency is not required.
+
+### Installation
+
+### Usage
+
+## Format of the output files
+
+For each input file, three output files are generated (additionally to the original cooccurrence file):
+
+### `.raw` file
+
+Abstracts:
+
+```
+<pmid> <year> <title> <abstract content>
+```
+
+Full article:
+
+```
+<pmid> <year> <title+subtitle> <abstract content> <paper content>
+```
+
+Where `<paper content>` includes the xml elements `article`, `back` and `floating`.
+
+### `.tok` file
+
+Full content of the sentences with ids
+
+```
+<pmid> <year> <partId> <elemId> <sentNo> <sentence words>
+```
+
+### `.cuis` file
+
+Extracted CUIs by position, i.e. for every position and length where at least one CUI is found the least of candidate CUIs (synonyms).
+
+The CUIs are provided as integer ids, as used internally by the KD system.
+
+```
+<pmid> <partId> <elemId> <sentNo> <cuis list> <position> <length>
+```
+
+## End of the description of the fork
+
+Below is the documentation of the system from the [source repository](https://github.com/jakelever/knowledgediscovery) by Jake Lever.
+
 # A collaborative filtering-based approach to biomedical knowledge discovery
 
 This code is the companion to the Bioinformatics paper (https://doi.org/10.1093/bioinformatics/btx613). To cite this project, there is some Bibtex below. And further below is an explanation with code inserts to do the complete analysis for the paper.
