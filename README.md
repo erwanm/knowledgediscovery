@@ -4,15 +4,104 @@
 
 This repository is a fork of [Jake Lever's Knowledge Discovery repository](https://github.com/jakelever/knowledgediscovery). The following modifications were made:
 
+- Modifications in the term extraction scripts so that a **much more detailed output is produced**. Originally these scripts only output a file containing the list of cooccurences. The modified version outputs the whole data: text of the abstracts/articles by sentence, the position of the UMLS terms and corresponding CUI.
 - Some small updates in the installation process and possibly other parts. In particular the PowerGraph dependency (see below) was replaced with [my own fork](https://github.com/erwanm/PowerGraph) in which a few broken things were fixed.
 - Changes in the "combine data" part of the system (several scripts). These changes were meant as an optimization in this part, but it turned out that which version is faster depends on the machine. So in retrospect this change is questionable, maybe the original version was better. Anyway I left it there because in the end I didn't use this part.
-- Modifications in the term extraction scripts so that a much more detailed output is produced. Originally these scripts only output a file containing the list of cooccurences. The modified version outputs the whole data: text of the abstracts/articles by sentence, the position of the UMLS terms and corresponding CUI.
 
 **Important note.** In my use case I don't use the LBD part of the system, only the data extraction part: downloading and preparing Medline and PMC data, then identifying the occurrences of UMLS terms and annotating the text with their Concept Unique Identifier (CUI). For this part of the process the (big) PowerGraph dependency is not required.
 
 ### Installation
 
-### Usage
+## Install as regular user with udocker 
+
+The installation process requires root privilege. In order to install as a regular user, an option is to create a [udocker](https://github.com/indigo-dc/udocker) container. This step is not needed if you have too privilege.
+
+### Create udocker container
+
+Follow the [instructions to install udocker](https://github.com/indigo-dc/udocker/blob/master/doc/installation_manual.md).
+
+
+```
+udocker pull ubuntu                     # download an image
+udocker create --name=kd ubuntu         # create new container from image
+udocker run -v ~ kd                     # run container as root with home directory mounted
+```
+
+### Install ubuntu packages (from the container)
+
+```
+apt update
+apt upgrade
+apt install gcc g++ build-essential wget python python-setuptools default-jdk cmake git
+```
+
+Note: it's possible that some errors such as the ones below happen, but it should be fine.
+
+```
+Errors were encountered while processing:
+ openssh-client
+ dbus
+E: Sub-process /usr/bin/dpkg returned an error code (1)
+```
+
+## Installing dependencies
+
+```
+git clone git@github.com:erwanm/knowledgediscovery.git
+```
+
+```
+cd knowledgediscovery/dependencies
+bash install.geniatagger.sh
+bash install.lingpipe.sh
+```
+
+Needed only for running the LBD part of the system:
+
+```
+bash install.powergraph.sh
+bash install.tclap.sh
+cd ../
+cd anniVectors
+make
+cd ../
+```
+
+# Usage
+
+## Downloading the NLM data
+
+These steps don't need to be executed inside the udocker container.
+
+### Downloading and preparing Medline and PMC data
+
+```
+bash data/prepareMedlineAndPMCData.sh medlineAndPMC
+```
+
+### Downloading the UMLS metathesaurus
+
+* Must be downloaded manually from https://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html
+  * Select "UMLS Metathesaurus Files" (no need for the "full release")
+  * Access requires a free UTC account.
+
+
+## Preparing UMLS Concepts
+
+```
+UMLSDIR=2019AA/META
+ unzip umls-2019AA-metathesaurus.zip
+# rm -f unzip umls-2019AA-metathesaurus.zip
+bash ../data/generateUMLSWordlist.sh $UMLSDIR ./
+```
+
+The folllowing step must be executed inside the udocker container.
+
+```
+python ../text_extraction/cooccurrenceMajigger.py --termsWithSynonymsFile umlsWordlist.Final.txt --stopwordsFile ../data/selected_stopwords.txt --removeShortwords --binaryTermsFile_out umlsWordlist.Final.pickle
+```
+
+
 
 ## Format of the output files
 
