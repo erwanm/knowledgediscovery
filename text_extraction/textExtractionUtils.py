@@ -19,7 +19,7 @@ def loadParsingTools():
 	
 	# Get the locations of geniatagger and lingpipe relative to this script
 	scriptPath = os.path.dirname(os.path.realpath(__file__))
-	geniaPath = scriptPath + "/../dependencies/geniatagger-3.0.1/geniatagger"
+	geniaPath = scriptPath + "/../dependencies/geniatagger-3.0.2/geniatagger"
 	lingpipePath = scriptPath + "/../dependencies/LingPipeSentenceSplitter/run.sh"
 	
 	# Check they are there
