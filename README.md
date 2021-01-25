@@ -10,7 +10,7 @@ This repository is a fork of [Jake Lever's Knowledge Discovery repository](https
 
 **Important note.** In my use case I don't use the LBD part of the system, only the data extraction part: downloading and preparing Medline and PMC data, then identifying the occurrences of UMLS terms and annotating the text with their Concept Unique Identifier (CUI). For this part of the process the (big) PowerGraph dependency is not required.
 
-### Installation
+# Installation
 
 ## Install as regular user with udocker 
 
