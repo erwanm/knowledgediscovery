@@ -1,10 +1,9 @@
 # About this fork
 
-*Caution: these explanations were added a long time after the modifications were done and my memory is not perfect.*
-
 This repository is a fork of [Jake Lever's Knowledge Discovery repository](https://github.com/jakelever/knowledgediscovery). The following modifications were made:
 
-- Modifications in the term extraction scripts so that a **much more detailed output is produced**. Originally these scripts only output a file containing the list of cooccurences. The modified version outputs the whole data: text of the abstracts/articles by sentence, the position of the UMLS terms and corresponding CUI.
+- Modifications in the term extraction scripts so that a **much more detailed output is produced**. Originally these scripts only output a file containing the list of cooccurences. The modified version outputs the whole data: text of the abstracts/articles by sentence, the position of the UMLS terms and corresponding CUI (see details in [Format of the output files](#format-of-the-output-files) below).
+- Additional output: a list of all the Medline abstracts by PMID with their list of Mesh descriptors (see [Medline Mesh Descriptors by PMID](#medline-mesh-descriptors-by-pmid) below).
 - Some small updates in the installation process and possibly other parts. In particular the PowerGraph dependency (see below) was replaced with [my own fork](https://github.com/erwanm/PowerGraph) in which a few broken things were fixed.
 - Changes in the "combine data" part of the system (several scripts). These changes were meant as an optimization in this part, but it turned out that which version is faster depends on the machine. So in retrospect this change is questionable, maybe the original version was better. Anyway I left it there because in the end I didn't use this part.
 
@@ -71,6 +70,17 @@ cd ../
 
 ## Downloading the NLM data
 
+### Space and time requirements
+
+These requirements are based on the NLM data as downloaded in January 2021.
+
+- Downloading and processing duration: around 115 hours, i.e. **almost 5 days**. 
+- Total space requirements: **almost 900 GB** (yes, really)
+  - Total `medlineAndPMC` directory: 841G
+    - Raw Medline 255G + raw PMC 252G = 507G
+    - Processed Medline: filtered 157G + unfiltered 178G  
+  - UMLS 35G
+
 These steps don't need to be executed inside the udocker container.
 
 ### Downloading and preparing Medline and PMC data
@@ -86,21 +96,76 @@ bash data/prepareMedlineAndPMCData.sh medlineAndPMC
   * Access requires a free UTC account.
 
 
-## Preparing UMLS Concepts
+### Preparing UMLS Concepts
+
+The following step produces files `umlsWordlist.Final.txt` and `umlsWordlist.WithIDs.txt`:
+
+- **Important**: the KD system extracts concept only for the following UMLS semantics categories: ANAT, CHEM, DISO, GENE, PHYS. This can be modified by changing the script `generateUMLSWordlist.sh`.
+- Duration: 6 to 7 hours (last step below).
 
 ```
-UMLSDIR=2019AA/META
- unzip umls-2019AA-metathesaurus.zip
-# rm -f unzip umls-2019AA-metathesaurus.zip
-bash ../data/generateUMLSWordlist.sh $UMLSDIR ./
+UMLSDIR=2020AB/META
+ unzip umls-2020AB-metathesaurus.zip
+bash data/generateUMLSWordlist.sh $UMLSDIR ./
 ```
 
-The folllowing step must be executed inside the udocker container.
+
+The folllowing step must be executed inside the udocker container, it produces file `umlsWordlist.Final.pickle`:
 
 ```
-python ../text_extraction/cooccurrenceMajigger.py --termsWithSynonymsFile umlsWordlist.Final.txt --stopwordsFile ../data/selected_stopwords.txt --removeShortwords --binaryTermsFile_out umlsWordlist.Final.pickle
+python text_extraction/cooccurrenceMajigger.py --termsWithSynonymsFile umlsWordlist.Final.txt --stopwordsFile data/selected_stopwords.txt --removeShortwords --binaryTermsFile_out umlsWordlist.Final.pickle
 ```
 
+### Optional step: compress directory
+
+- Duration: 3 to 4h using 40 cores
+- Compressed directory size: 114G (space saved around 86%)
+
+```
+mksquashfs medlineAndPMC/ medlineAndPMC.sqsh -comp xz
+```
+
+## Mining UMLS concepts from Medline and PMC
+
+The collection of PMC full articles overlaps with Medline abstracts: a paper can have its abstract in Medline and its full article in PMC, including the abstract. For this reason the KD system can compute two versions of the data:
+
+- The "unfiltered Medline" version is made of all the Medline abstracts and only these (no PMC).
+- The "abstracts+articles" version is made of all the PMC articles and the Medline abstracts which are not present in PMC. In other words, the Medline abstracts are filtered to avoid any duplicate abstract with PMC.
+  - The two parts of the data (filtered Medline and full PMC) are kept separated in the output, thus it is possible to use exclusively one or the other.
+  - This is the regular version of the data in the original KD system.
+
+Note: currently the only convenient way to obtain both versions is to compute both. This is obviously not optimal since the filtering of Medline could be done on the result, this would save a lot of computation. This might be improved in the future but it's not exactly a priority of mine.
+
+### Parallel processing
+
+The mining process is very computer-intensive, but the data is split into small chunks so that it can be processed in parallel. The KD scripts below output a list of jobs to run, each job processing one chunk of data. 
+
+- With the January 2021 NLM data the unfiltered Medline version produces 1250 chunks and the abstracts+articles produces 2950 chunks. 
+- A very optimistic estimate is that a chunk takes in average 1h to compute (it's probably closer to 2h in average). Thus processing the tasks sequentially would take at least **3000h (4 months) for the abstracts+articles** version and **1250h (almost 2 months) for the unfiltered Medline version**.
+- Space requirements
+  - unfiltered Medline: **159 G**
+  - abstracts+articles: **TODO**
+
+With the two commands below the list of jobs to run is written to `commands_abstracts.txt` (abstracts), `commands_articles.txt` (articles) and `commands_all.txt` (both together).
+
+//Note to self: follow [[2020-08-04 Redoing the KD data process]] for running on boole.//
+
+### Mining unfiltered Medline abstracts
+
+```
+bash ../text_extraction/generateCommandListsForAbstractsOnly.updated.sh medlineAndPMC
+```
+
+### Mining filtered Medline abstracts + PMC articles
+
+```
+bash text_extraction/generateCommandLists.sh medlineAndPMC
+```
+
+
+## Medline Mesh Descriptors by PMID
+
+**TODO**
 
 
 ## Format of the output files
