@@ -9,6 +9,8 @@ This repository is a fork of [Jake Lever's Knowledge Discovery repository](https
 
 **Important note.** In my use case I don't use the LBD part of the system, only the data extraction part: downloading and preparing Medline and PMC data, then identifying the occurrences of UMLS terms and annotating the text with their Concept Unique Identifier (CUI). For this part of the process the (big) PowerGraph dependency is not required.
 
+[Go to the original documentation (after my additions)](#a-collaborative-filtering-based-approach-to-biomedical-knowledge-discovery)
+
 # Installation
 
 ## Install as regular user with udocker 
@@ -170,6 +172,7 @@ bash text_extraction/generateCommandLists.sh medlineAndPMC
 
 ## Format of the output files
 
+
 For each input file, three output files are generated (additionally to the original cooccurrence file):
 
 ### `.raw` file
@@ -205,6 +208,19 @@ The CUIs are provided as integer ids, as used internally by the original KD syst
 ```
 <pmid> <partId> <elemId> <sentNo> <cuis list> <position> <length>
 ```
+
+### Mesh descriptors by PMID
+
+```
+<pmid> <year> <pmid version> <journal> <title> <mesh list>
+```
+
+Where `<mesh list>` is a comma-separated list of Mesh descriptors together with the value for 'MajorTopicYN' after each of them (separated by `|`). Example:
+
+```
+D005845|N,D006268|Y,D006273|Y,D006739|Y,D006786|N,D014481|N
+```
+
 
 ## End of the description of the fork
 
