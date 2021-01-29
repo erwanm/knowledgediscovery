@@ -11,7 +11,7 @@ python=python
 
 HERE=`pwd`
 
-cooccurrenceMajigger=$HERE/../text_extraction/cooccurrenceMajigger.py
+cooccurrenceMajigger=$HERE/text_extraction/cooccurrenceMajigger.py
 wordlist=$HERE/umlsWordlist.Final.pickle
 
 cooccurrenceMajigger=`readlink -f $cooccurrenceMajigger`
