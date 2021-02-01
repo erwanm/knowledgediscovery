@@ -146,7 +146,7 @@ The mining process is very computer-intensive, but the data is split into small 
 - A very optimistic estimate is that a chunk takes in average 1h to compute (it's probably closer to 2h in average). Thus processing the tasks sequentially would take at least **3000h (4 months) for the abstracts+articles** version and **1250h (almost 2 months) for the unfiltered Medline version**.
 - Space requirements
   - unfiltered Medline: **159 G**
-  - abstracts+articles: **TODO**
+  - abstracts+articles: **579 G**
 
 With the two commands below the list of jobs to run is written to `commands_abstracts.txt` (abstracts), `commands_articles.txt` (articles) and `commands_all.txt` (both together).
 
@@ -165,9 +165,30 @@ bash text_extraction/generateCommandLists.sh medlineAndPMC
 ```
 
 
-## Medline Mesh Descriptors by PMID
+### Optional step: compress directories
 
-**TODO**
+```
+mksquashfs mined mined.sqsh -comp xz
+```
+
+## Extracting Mesh descriptors by PMID from Medline
+
+This step is short and doesn't require the udocker container.
+
+```
+mkdir /tmp/med
+squashfuse medlineAndPMC.sqsh /tmp/med
+python2 text_extraction/get-mesh-descriptors-by-pmid.py --abstractsDir /tmp/med/unfilteredMedline/ --outFile mesh-descriptors-by-pmid.tsv
+```
+
+Or if the `medlineAndPMC` wasn't compressed:
+
+```
+python2 text_extraction/get-mesh-descriptors-by-pmid.py --abstractsDir medlineAndPMC/unfilteredMedline/ --outFile mesh-descriptors-by-pmid.tsv
+```
+
+The resulting file `mesh-descriptors-by-pmid.tsv` is 7GB.
+
 
 
 ## Format of the output files
